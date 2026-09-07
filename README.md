@@ -10,4 +10,4 @@ sudo bash scripts/diagnose-vpn-happ.sh | tee /tmp/happ-diag.txt
 ```
 
 - [Happ](docs/ubuntu-24-vpn-happ.md) — `sudo happ` + TUN.
-- [Browsec](docs/ubuntu-24-browsec.md) — GUI только от пользователя, не `sudo`. Касперский часто режет IPsec/TUN, оставляя расширение живым.
+- [Browsec](docs/ubuntu-24-browsec.md) — GUI только от пользователя. Docker `172.20.0.0/16` исключается через `ip rule`, не через Full Protection.

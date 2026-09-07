@@ -152,3 +152,54 @@ sudo bash scripts/diagnose-vpn-happ.sh | tee /tmp/happ-diag.txt
 Скрипт снимает и Happ, и Browsec (пакет, UDP 500/4500, xfrm).
 
 Пока десктоп мёртв, для браузера оставляйте расширение — оно на эту поломку не опирается.
+
+## Исключить Docker `172.20.0.0/16` из Browsec
+
+В GUI нет CIDR: **Full Protection / Only chosen / All except chosen** — это приложения, не подсети. Файл `~/.config/browsec-desktop/browbox-config.json` при каждом коннекте пересобирается, правки там не живут.
+
+Не исключайте весь `172.16.0.0/12`: у Browsec DNS туннеля был `172.19.0.2`, широкий RFC1918-исключение убьёт сам VPN. Нужен только `172.20.0.0/16`.
+
+1. Без VPN найдите мост:
+
+```bash
+ip route show 172.20.0.0/16
+docker network ls
+docker network inspect "$(docker network ls -q)" --format '{{.Name}} {{range .IPAM.Config}}{{.Subnet}}{{end}}'
+```
+
+2. Правила с приоритетом выше, чем у `browbox-tun` (чем меньше pref, тем раньше):
+
+```bash
+sudo ip rule add to 172.20.0.0/16 table main pref 50
+sudo ip rule add from 172.20.0.0/16 table main pref 51
+```
+
+`to` — хост ходит в контейнеры. `from` — контейнеры ходят в интернет/хост мимо TUN.
+
+3. Проверка при включённом Browsec:
+
+```bash
+ip rule
+ip route get 172.20.0.2
+# dev должен быть br-… / docker-мост, не browbox-tun
+```
+
+Правила пропадают после reboot. Чтобы ставились вместе с Docker:
+
+```bash
+sudo tee /etc/NetworkManager/dispatcher.d/50-browsec-docker-exclude >/dev/null <<'EOF'
+#!/bin/sh
+ip rule show | grep -q 'to 172.20.0.0/16 lookup main' || ip rule add to 172.20.0.0/16 table main pref 50
+ip rule show | grep -q 'from 172.20.0.0/16 lookup main' || ip rule add from 172.20.0.0/16 table main pref 51
+exit 0
+EOF
+sudo chmod 755 /etc/NetworkManager/dispatcher.d/50-browsec-docker-exclude
+```
+
+Снять:
+
+```bash
+sudo ip rule del to 172.20.0.0/16 table main pref 50
+sudo ip rule del from 172.20.0.0/16 table main pref 51
+```
+
