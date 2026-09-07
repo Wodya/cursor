@@ -1,12 +1,11 @@
-# Диагностика VPN через HAProxy на Ubuntu 24
+# Диагностика Happ на Ubuntu 24
 
-На Windows VPN через HAProxy работает, у коллеги на Ubuntu 24 в той же сети — тоже.
-На этой Ubuntu не поднимается **ни один** VPN. Значит ломается **локальная машина**, а не провайдер и не сервер.
+Клиент — **Happ** (Xray GUI), не HAProxy. На Windows и у коллеги на Ubuntu 24 в той же сети профили живые; на этой машине — ни один.
 
-Этот репозиторий не видит ваш ноутбук: агент крутится в облаке. Запустите скрипт **на сломанной Ubuntu** и пришлите вывод.
+Агент в облаке ваш ноутбук не видит. Запустите на сломанной Ubuntu:
 
 ```bash
-sudo bash scripts/diagnose-vpn-haproxy.sh | tee /tmp/vpn-haproxy-diag.txt
+sudo bash scripts/diagnose-vpn-happ.sh | tee /tmp/happ-diag.txt
 ```
 
-Дальше — [пошаговый разбор](docs/ubuntu-24-vpn-haproxy.md).
+Пока вывод не пришёл, чаще всего помогает `sudo happ` + режим **TUN** и ручной выбор сервера. Разбор: [docs/ubuntu-24-vpn-happ.md](docs/ubuntu-24-vpn-happ.md).
