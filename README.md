@@ -10,4 +10,4 @@ sudo bash scripts/diagnose-vpn-happ.sh | tee /tmp/happ-diag.txt
 ```
 
 - [Happ](docs/ubuntu-24-vpn-happ.md) — `sudo happ` + TUN.
-- [Browsec](docs/ubuntu-24-browsec.md) — GUI только от пользователя, не `sudo`. «Connection is blocked»: выгрузить root-Happ, снять leftover tun/nft, UDP 500/4500, логи.
+- [Browsec](docs/ubuntu-24-browsec.md) — GUI только от пользователя, не `sudo`. Касперский часто режет IPsec/TUN, оставляя расширение живым.
