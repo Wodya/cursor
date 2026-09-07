@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Collects Happ (happ.su / happ.info) client diagnostics on Ubuntu.
+# Collects Happ + Browsec desktop VPN diagnostics on Ubuntu.
 # Safe: read-only except optional ping/DNS probes.
 # Usage:
 #   bash scripts/diagnose-vpn-happ.sh
@@ -35,7 +35,7 @@ if [[ "${EUID:-$(id -u)}" -eq 0 && -n "${SUDO_USER:-}" ]]; then
   REAL_HOME="$(getent passwd "${SUDO_USER}" | cut -d: -f6)"
 fi
 
-echo "Happ (not HAProxy) Ubuntu diagnostic"
+echo "Happ / Browsec desktop Ubuntu diagnostic"
 echo "date:        $(date -Is 2>/dev/null || date)"
 echo "user:        $(id)"
 echo "real user:   ${REAL_USER} home=${REAL_HOME}"
@@ -108,6 +108,41 @@ if have ip; then
 else
   ls /sys/class/net
 fi
+
+section "3b. Browsec desktop + IPsec (UDP 500/4500)"
+if have dpkg; then
+  dpkg -l '*browsec*' 2>/dev/null | grep -E '^ii' || echo "dpkg: no browsec package listed"
+fi
+for bin in browsec Browsec browsec-desktop; do
+  if have "${bin}"; then
+    echo "  ${bin}: $(command -v "${bin}")"
+  fi
+done
+for d in /opt/Browsec /opt/browsec /usr/lib/browsec /usr/lib/Browsec; do
+  [[ -d "${d}" ]] && echo "  FOUND ${d}" && ls -ld "${d}" && ls "${d}" | head -n 20
+done
+echo "IPsec kernel modules:"
+lsmod 2>/dev/null | grep -Ei 'xfrm|esp4|esp6|ah4|af_key|xfrm_user' || echo "  (not in lsmod — may still be built-in; check: grep -i xfrm /lib/modules/$(uname -r)/modules.builtin 2>/dev/null)"
+echo "UDP 500/4500 listeners:"
+if have ss; then
+  run ss -lunp 2>/dev/null | grep -E ':500 |:4500 ' || echo "  (nothing bound — OK if not connected yet)"
+fi
+echo "xfrm state/policy (IPsec SAs):"
+run ip xfrm state 2>/dev/null | head -n 20 || true
+run ip xfrm policy 2>/dev/null | head -n 20 || true
+for d in \
+  "${REAL_HOME}/.config/Browsec" \
+  "${REAL_HOME}/.config/browsec" \
+  "${REAL_HOME}/.config/browsec-desktop" \
+  "${REAL_HOME}/.config/Browsec Desktop" \
+  "${REAL_HOME}/.config/browsec-vpn" \
+  "${REAL_HOME}/.local/share/Browsec" \
+  "${REAL_HOME}/.local/share/browsec"; do
+  if [[ -d "${d}" ]]; then
+    echo "  FOUND ${d}"
+    run ls -la "${d}" 2>/dev/null | head -n 30
+  fi
+done
 
 section "4. Routes / leftover kill-switch"
 if have ip; then
@@ -236,8 +271,7 @@ fi
 
 section "DONE"
 echo "Next on this Ubuntu:"
-echo "  1) sudo apt install ./Happ.linux.x64.deb   # latest from Happ-proxy/happ-desktop"
-echo "  2) sudo systemctl enable --now happd       # if unit exists"
-echo "  3) sudo happ                               # TUN needs root; desktop icon is user-only"
-echo "  4) pick a server, then connect; try TUN provider tun2proxy if Xray TUN fails"
+echo "  Happ: sudo happ + TUN; pick a server; try tun2proxy if Xray TUN fails"
+echo "  Browsec: quit Happ first; allow UDP 500/4500; run desktop as root; read Logs directory"
+echo "  Browser extension can stay on — it does not use IPsec/TUN"
 echo "Paste this output for the next step."
