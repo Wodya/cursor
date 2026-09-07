@@ -56,6 +56,22 @@ lsmod | grep -iE 'kasp|klue|kesl'
 
 Не оставляйте защиту выключенной. Если пауза ничего не меняет — Касперский ни при чём, смотрите leftover от Happ.
 
+Полное удаление Kaspersky for Linux (`kfl`, он у вас в `app-kaspersky-kfl@autostart`):
+
+```bash
+dpkg -l | grep -iE 'kasp|kfl|kesl|klnagent'
+sudo systemctl stop kfl 2>/dev/null
+pkgs=$(dpkg -l | awk '/^ii/ && $2 ~ /kfl|kesl|klnagent|kaspersky/ {print $2}')
+echo "packages: $pkgs"
+sudo apt-get purge -y $pkgs
+sudo apt-get autoremove -y
+rm -f ~/.config/autostart/*kaspersky* ~/.config/autostart/*kfl*
+sudo rm -rf /opt/kaspersky /var/opt/kaspersky /var/log/kaspersky
+sudo reboot
+```
+
+После перезагрузки: `dpkg -l | grep -iE 'kasp|kfl|kesl'` должен быть пустым, `lsmod | grep -iE 'kasp|kfl|klue'` тоже. Затем только Browsec, без Happ.
+
 ## Что сделать сейчас
 
 В этом порядке, не всё сразу.
