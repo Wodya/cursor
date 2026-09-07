@@ -12,7 +12,17 @@ sudo bash scripts/diagnose-vpn-happ.sh | tee /tmp/happ-diag.txt
 
 Дальше — по первому совпавшему пункту.
 
-## 1. TUN с ярлыка не поднимается — запускайте `sudo happ`
+## 1. TUN с ярлыка не поднимается — права нужны ядру Happ, не Electron
+
+Happ (Qt) можно поднять через `sudo happ`. **Browsec так нельзя**: это Electron, `sudo /opt/Browsec/browsec-desktop` падает с `Running as root without --no-sandbox`.
+
+После `sudo happ` процесс висит от root (`pkill` без sudo даёт Operation not permitted). Убейте его и снимите хвосты **до** Browsec:
+
+```bash
+sudo pkill -i happ
+ip -br link
+ip rule
+```
 
 Самая частая Linux-причина. Windows-установщик даёт драйвер и права. Linux-ярлык запускает GUI **без** `CAP_NET_ADMIN`. Ядро не создаёт `tun0`, все профили «не коннектятся».
 

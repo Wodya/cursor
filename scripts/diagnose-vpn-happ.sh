@@ -272,6 +272,6 @@ fi
 section "DONE"
 echo "Next on this Ubuntu:"
 echo "  Happ: sudo happ + TUN; pick a server; try tun2proxy if Xray TUN fails"
-echo "  Browsec: quit Happ first; allow UDP 500/4500; run desktop as root; read Logs directory"
+echo "  Browsec: NEVER sudo (Electron). Kill root Happ first; reboot if tun leftover; UDP 500/4500; Logs directory"
 echo "  Browser extension can stay on — it does not use IPsec/TUN"
 echo "Paste this output for the next step."

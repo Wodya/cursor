@@ -26,7 +26,7 @@
 1. **Happ (или другой VPN) ещё держит маршруты/nftables.** Full Protection + второй клиент = классический конфликт. Сначала полностью выйти из Happ, не оставлять его в трее.
 2. **UFW/nftables режет UDP 500 и 4500**, а HTTPS 443 (расширение) пропускает.
 3. Нет `/dev/net/tun` или модулей `xfrm` / `esp4`.
-4. Ярлык запускает GUI без прав на туннель (как `happ` без sudo).
+4. После `sudo happ` хвосты `tun*` / `ip rule` / nftables остаются, даже когда GUI Happ уже убит.
 
 Смена страны в приложении это не лечит: пинг есть, IKE/TUN нет.
 
@@ -37,12 +37,12 @@
 **1. Убить другие VPN** (Happ, WARP, Amnezia, Outline, Proton):
 
 ```bash
-pkill -i happ; pkill -i xray; pkill -i tun2proxy
+sudo pkill -i happ; sudo pkill -i xray; sudo pkill -i tun2proxy
 ip rule
 ip -br link
 ```
 
-Лишние `ip rule` и интерфейсы `tun0`/`xray0` после закрытия Happ — хвост kill-switch.
+`pkill` без sudo часто не убивает Happ: он висит от root. Лишние `ip rule` и `tun0`/`xray0` после этого — хвост kill-switch. Проще reboot, если правил много.
 
 **2. Проверить IPsec и TUN:**
 
@@ -60,14 +60,19 @@ sudo ufw allow 500/udp
 sudo ufw allow 4500/udp
 ```
 
-**3. Запустить десктоп с правами и только его:**
+**3. Browsec — Electron, `sudo` запрещён.**
 
-```bash
-sudo /opt/Browsec/browsec   # путь может быть /opt/browsec или browsec в PATH
-# либо из каталога приложения, который открывает пункт «Logs directory»
+```
+Running as root without --no-sandbox is not supported.
 ```
 
-В приложении снова Full Protection → другая страна (не только Poland) → тумблер.
+`%U` — плейсхолдер из `.desktop`, в терминал его не копируют. Запуск своим пользователем:
+
+```bash
+/opt/Browsec/browsec-desktop --ozone-platform=x11
+```
+
+Или ярлык в меню приложений. Full Protection → страна → тумблер. Если leftover от Happ — сначала reboot, потом только Browsec.
 
 **4. Логи.** В левом меню **Logs directory**. Ищите `permission`, `tun`, `IKE`, `4500`, `xfrm`, `blocked`, `netlink`. Без ключей можно прислать последние 80 строк.
 
