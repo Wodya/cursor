@@ -76,6 +76,25 @@ ip rule
 
 Пока в `ps` есть `happd` или в `ip link` есть `happ-xray`, Browsec Full Protection будет падать с `Browbox connection check failed`.
 
+Чтобы демон не поднялся снова:
+
+```bash
+sudo systemctl mask happd
+```
+
+Если `happd` уже `inactive`, а Browsec всё равно blocked — дальше Касперский `kfl` и хвосты маршрутов/Docker:
+
+```bash
+ip rule
+ip route
+systemctl is-active kfl
+systemctl status kfl --no-pager
+sudo systemctl stop kfl
+sudo iptables -L -n | head -n 40
+```
+
+Потом снова только Browsec из меню. Пришлите `ip rule` и 30 секунд journalctl вокруг новой попытки.
+
 **2. Проверить IPsec и TUN:**
 
 ```bash
