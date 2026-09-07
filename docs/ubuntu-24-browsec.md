@@ -26,7 +26,9 @@
 1. **Happ (или другой VPN) ещё держит маршруты/nftables.** Full Protection + второй клиент = классический конфликт. Сначала полностью выйти из Happ, не оставлять его в трее.
 2. **UFW/nftables режет UDP 500 и 4500**, а HTTPS 443 (расширение) пропускает.
 3. Нет `/dev/net/tun` или модулей `xfrm` / `esp4`.
-4. После `sudo happ` хвосты `tun*` / `ip rule` / nftables остаются, даже когда GUI Happ уже убит.
+4. После `sudo happ` хвосты `tun*` / `ip rule` / nftables остаются, даже когда GUI Happ уже убит. Демон **`happd` (часто pid от root)** продолжает сам поднимать интерфейс `happ-xray`. Обычный `pkill happ` его не убивает.
+
+Журнал с этой машины: `browbox-tun` **создаётся** (`sudo` → `/opt/Browsec/resources/xray/browbox`), DNS 172.19.0.2, затем `report handshake success: connection refused` и `Browbox connection check failed` — GUI сам сносит TUN. Проверка `ip link show browbox-tun` после ошибки будет пустой: интерфейс уже удалён. Параллельно NetworkManager пишет `device (happ-xray)` каждые ~15 с, пока жив `happd[2151]`. Касперский: `app-kaspersky-kfl@autostart` есть в user systemd.
 
 Смена страны в приложении это не лечит: пинг есть, IKE/TUN нет.
 
@@ -58,15 +60,21 @@ lsmod | grep -iE 'kasp|klue|kesl'
 
 В этом порядке, не всё сразу.
 
-**1. Убить другие VPN** (Happ, WARP, Amnezia, Outline, Proton):
+**1. Выключить Happ целиком, не только GUI**
 
 ```bash
-sudo pkill -i happ; sudo pkill -i xray; sudo pkill -i tun2proxy
-ip rule
+systemctl status happd --no-pager
+ps aux | grep -iE 'happd|happ-xray|browbox'
+sudo systemctl stop happd
+sudo systemctl disable happd
+sudo pkill -9 happd
+sudo pkill -9 -f happ-xray
+sudo ip link delete happ-xray 2>/dev/null
 ip -br link
+ip rule
 ```
 
-`pkill` без sudo часто не убивает Happ: он висит от root. Лишние `ip rule` и `tun0`/`xray0` после этого — хвост kill-switch. Проще reboot, если правил много.
+Пока в `ps` есть `happd` или в `ip link` есть `happ-xray`, Browsec Full Protection будет падать с `Browbox connection check failed`.
 
 **2. Проверить IPsec и TUN:**
 
